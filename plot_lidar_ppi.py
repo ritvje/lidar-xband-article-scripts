@@ -187,6 +187,7 @@ if __name__ == "__main__":
     )
     args = argparser.parse_args()
     outpath = Path(args.outpath)
+    outpath.mkdir(parents=True, exist_ok=True)
 
     lidar = wrl.io.xarray.CfRadial(
         args.lidarfile, flavour="Cf/Radial2", decode_times=False
