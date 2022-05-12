@@ -1,0 +1,3 @@
+[submodule "radar_plotting"]
+	path = radar_plotting
+	url = git@github.com:ritvje/radar_plotting.git
