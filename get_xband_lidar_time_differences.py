@@ -8,8 +8,6 @@ from datetime import datetime
 import logging
 import pandas as pd
 
-
-import utils
 import file_utils
 
 
@@ -41,8 +39,8 @@ if __name__ == "__main__":
     args = argparser.parse_args()
     logging.basicConfig(level=logging.INFO)
 
-    xband_files = utils.get_sigmet_file_list_by_task(args.xband_path)
-    lidar_files = utils.get_lidar_file_list_by_type(args.lidar_path)
+    xband_files = file_utils.get_sigmet_file_list_by_task(args.xband_path)
+    lidar_files = file_utils.get_lidar_file_list_by_type(args.lidar_path)
 
     lidar_dict = {}
     for fn in lidar_files[(args.scan_type, args.scan_angle)]:

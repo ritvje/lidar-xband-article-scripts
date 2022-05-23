@@ -1,17 +1,20 @@
-"""Utility functions used in data processing."""
-import re
-import os
-from datetime import datetime
+"""Utility functions used in data processing.
+
+Includes functions
+- query_Smartmet_station
+- create_grid
+- lidar_to_cart
+- radar_to_cart
+- lidar_spherical_to_xyz
+
+Author: Jenna Ritvanen <jenna.ritvanen@fmi.fi>
+
+"""
 import numpy as np
-import pyart
 import pyproj
 import wradlib as wrl
 import requests
 import pandas as pd
-from attrdict import AttrDict
-from netCDF4 import Dataset
-import xarray as xr
-import struct
 
 
 def query_Smartmet_station(
@@ -83,126 +86,359 @@ def query_Smartmet_station(
     return df
 
 
-def get_sigmet_file_list_by_task(
-    path, file_regex="WRS([0-9]{12}).RAW([A-Z0-9]{4})", task_name=None
-):
-    """Generate a list of files by task.
+def create_grid(corners, xres, yres, t_crs="EPSG:3067"):
+    """Create a regular grid in the target CRS.
 
     Parameters
     ----------
-    path : str
-        Path to data location
-    file_regex : str
-        Regex for matching filenames.
-    task_name : str
-        If given, only return files matching this task.
+    corners : list
+        The corners of the grid in lat/lon in the order:
+        top left, bottom right.
+    xres : float
+        The x resolution of the grid, in target CRS units.
+    yres : float
+        The y resolution of the grid, in target CRS units.
+    t_crs : str
+        The target coordinate reference system,
+        a string that can be used to initialise a coordinate reference
+        object.
 
     Returns
     -------
-    out : dict
-        Dictionary of lists of filenames in `path`, with key giving the task name.
+    X : np.ndarray
+        The x coordinates of the grid.
+    Y : np.ndarray
+        The y coordinates of the grid.
 
     """
-    # Browse files
-    prog = re.compile(file_regex.encode().decode("unicode_escape"))
-    fullpath = os.path.abspath(path)
+    # Set up projections
+    proj_latlon = pyproj.Proj("epsg:4326")
+    proj_target = pyproj.Proj(t_crs)  # metric
 
-    data = []
+    # Create corners of rectangle to be transformed to a grid
+    # Top left
+    topleft = corners[0]
+    bottomright = corners[1]
+    topleft_m = pyproj.transform(
+        proj_latlon, proj_target, topleft[0], topleft[1], always_xy=True
+    )
+    bottomright_m = pyproj.transform(
+        proj_latlon, proj_target, bottomright[0], bottomright[1], always_xy=True
+    )
 
-    for (root, dirs, files) in os.walk(fullpath):
-        addpath = root.replace(fullpath, "")
+    xx = np.arange(topleft_m[0], bottomright_m[0], xres)
+    yy = np.arange(bottomright_m[1], topleft_m[1], yres)
 
-        for f in files:
-            result = prog.match(f)
-
-            if result is None:
-                continue
-
-            try:
-                # Get task name from headers
-                sf = pyart.io.sigmet.SigmetFile(os.path.join(root, f))
-                task = (
-                    sf.product_hdr["product_configuration"]["task_name"]
-                    .decode()
-                    .strip()
-                )
-                sf.close()
-                if task_name is not None and task != task_name:
-                    continue
-                data.append([os.path.join(addpath, f), task])
-            except (ValueError, OSError):
-                continue
-            except struct.error:
-                print(f"Failed to read {f} with pyart!")
-                continue
-
-    df = pd.DataFrame(data, columns=["filename", "task_name"])
-    out = {}
-    for task, df_task in df.groupby("task_name"):
-        out[task] = df_task["filename"].to_list()
-
-    return out
+    X, Y = np.meshgrid(xx, yy)
+    return X, Y, proj_target
 
 
-def get_lidar_file_list_by_type(
-    path,
-    file_regex="WLS400s-113_([0-9_-]{19})_([a-z]+)_([0-9]+)_([0-9]+)m.nc",
-    elev_angle=None,
-    scan_type=None,
+def lidar_to_cart(
+    polar_data,
+    theta,
+    r,
+    elev,
+    lidar_lonlat,
+    xgrid,
+    ygrid,
+    zlims=[0, 1e3],
+    grid_proj4=None,
+    ipol_method="nearest",
+    r_e=6371288,
+    rlim=None,
 ):
-    """Generate a list of files by scan type and fixed angle.
+    """Reproject radar polar data to cartesian grid.
 
     Parameters
     ----------
-    path : str
-        Path to data location
-    file_regex : str
-        Regex for matching filenames.
-    elev_angle : float
-        Filter by elevation angle.
-    scan_type : str
-        Filter by scan type.
+    polar_data : numpy.ma.ndarray
+        The data that is reprojected. The first axis is the azimuth
+        angles and the second is the range. Needs to be a masked array.
+    theta : float
+        The azimuth values of the data.
+    r : float
+        The ranges along line-of-sight of the data.
+    radar_lonlat : np.ndarray
+        The lon, lat coordinates of the radar.
+    xgrid : numpy.ndarray
+        The new x coordinates for all grid points (the output from np.meshgrid).
+    ygrid : numpy.ndarray
+        The new y coordinates for all grid points (the output from np.meshgrid).
+    zlims : array_like
+        The altitude limits for the radar beams that are interpolated to grid.
+    grid_proj4 : str
+        Proj4 string of the grid. If None, the aeqd projection of the radar is used.
+    ipol_method : string
+        The interpolation method, should correspond to a wradlib
+        interpolation method.
+    r_e : float
+        The radius of Earth. Default 6371288 meters.
+    rlim : float
+        The maximum radius fro interpolated data.
 
     Returns
     -------
-    out : dict
-        Dictionary of lists of filenames in `path`, with key giving the scan type amd
-        fixed angle.
+    gridded : numpy.ma.ndarray
+        The data reprojected onto new grid.
+    rad : osgeo.osr.SpatialReference
+        The projection of the grid.
+    """
+    # Coordinates of lidar bins in cartesian
+    coords, lid = lidar_spherical_to_xyz(
+        elev, r, theta, lidar_lonlat, r_e=r_e, squeeze=True
+    )
+
+    # Project to new grid
+    if grid_proj4 is not None:
+        proj = wrl.georef.projection.proj4_to_osr(grid_proj4)
+        coords = wrl.georef.reproject(
+            coords, projection_source=lid, projection_target=proj
+        )
+        rproj = proj
+    else:
+        rproj = lid
+
+    xlidar = coords[..., 0]
+    ylidar = coords[..., 1]
+    zlidar = coords[..., 2]
+
+    # Mask points where beam is too high or low
+    zcond = (zlidar < zlims[0]) | (zlidar > zlims[1])
+    polar_data[zcond] = np.nan
+
+    xy = np.concatenate([xlidar.ravel()[:, None], ylidar.ravel()[:, None]], axis=1)
+
+    # Define grid
+    # grid_xy = np.meshgrid(xgrid, ygrid)
+    grid_xy = np.vstack((xgrid.ravel(), ygrid.ravel())).transpose()
+
+    # select interpolate method
+    if ipol_method.lower() == "nearest":
+        method = wrl.ipol.Nearest
+    else:
+        raise ValueError(f"Interpolation method'{ipol_method} not implemented!")
+
+    if rlim is None:
+        rlim = np.max(r)
+
+    polar_data.set_fill_value(np.nan)
+    # Interpolate to new grid
+    gridded = wrl.comp.togrid(
+        xy,
+        grid_xy,
+        rlim,
+        np.array([xlidar.mean(), ylidar.mean()]),
+        polar_data.ravel().filled(),
+        method,
+    )
+    gridded = np.ma.masked_invalid(gridded).reshape((xgrid.shape[0], xgrid.shape[1]))
+    gridded.set_fill_value(np.nan)
+    return gridded, rproj
+
+
+def radar_to_cart(
+    polar_data,
+    theta,
+    r,
+    elev,
+    radar_lonlat,
+    xgrid,
+    ygrid,
+    zlims=[0, 1e3],
+    grid_proj4=None,
+    ipol_method="nearest",
+    r_e=6371288,
+    rlim=None,
+):
+    """Reproject radar polar data to cartesian grid.
+
+    Parameters
+    ----------
+    polar_data : numpy.ma.ndarray
+        The data that is reprojected. The first axis is the azimuth
+        angles and the second is the range. Needs to be a masked array.
+    theta : float
+        The azimuth values of the data.
+    r : float
+        The ranges along line-of-sight of the data.
+    radar_lonlat : np.ndarray
+        The lon, lat coordinates of the radar.
+    xgrid : numpy.ndarray
+        The new x coordinates for all grid points (the output from np.meshgrid).
+    ygrid : numpy.ndarray
+        The new y coordinates for all grid points (the output from np.meshgrid).
+    zlims : array_like
+        The altitude limits for the radar beams that are interpolated to grid.
+    grid_proj4 : str
+        Proj4 string of the grid. If None, the aeqd projection of the radar is used.
+    ipol_method : string
+        The interpolation method, should correspond to a wradlib
+        interpolation method.
+    r_e : float
+        The radius of Earth. Default 6371288 meters.
+    rlim : float
+        The maximum radius for interpolated data.
+
+    Returns
+    -------
+    gridded : numpy.ma.ndarray
+        The data reprojected onto new grid.
+    rad : osgeo.osr.SpatialReference
+        The projection of the grid.
+    """
+    # Coordinates of radar bins in cartesian
+    coords, rad = wrl.georef.spherical_to_xyz(
+        r, theta, elev, radar_lonlat, re=r_e, squeeze=True
+    )
+
+    # Project to new grid
+    if grid_proj4 is not None:
+        proj = wrl.georef.projection.proj4_to_osr(grid_proj4)
+        coords = wrl.georef.reproject(
+            coords, projection_source=rad, projection_target=proj
+        )
+        rproj = proj
+    else:
+        rproj = rad
+
+    xradar = coords[..., 0]
+    yradar = coords[..., 1]
+    zradar = coords[..., 2]
+
+    # Mask points where beam is too high or low
+    zcond = (zradar < zlims[0]) | (zradar > zlims[1])
+    polar_data[zcond] = np.nan
+
+    xy = np.concatenate([xradar.ravel()[:, None], yradar.ravel()[:, None]], axis=1)
+
+    # Define grid
+    # grid_xy = np.meshgrid(xgrid, ygrid)
+    grid_xy = np.vstack((xgrid.ravel(), ygrid.ravel())).transpose()
+
+    # select interpolate method
+    if ipol_method.lower() == "nearest":
+        method = wrl.ipol.Nearest
+    else:
+        raise ValueError(f"Interpolation method'{ipol_method} not implemented!")
+
+    if rlim is None:
+        rlim = np.max(r)
+
+    polar_data.set_fill_value(np.nan)
+    # Interpolate to new grid
+    gridded = wrl.comp.togrid(
+        xy,
+        grid_xy,
+        rlim,
+        np.array([xradar.mean(), yradar.mean()]),
+        polar_data.ravel().filled(),
+        method,
+    )
+    gridded = np.ma.masked_invalid(gridded).reshape((xgrid.shape[0], xgrid.shape[1]))
+    gridded.set_fill_value(np.nan)
+    return gridded, rproj
+
+
+def lidar_spherical_to_xyz(
+    elev, r, azimuth, sitecoords=(0, 0, 0), r_e=6371288, squeeze=True, strict_dims=True
+):
+    """Compute the geographical coordinates for the lidar beam.
+
+    Code taken modified slightly from
+    wradlib.georef.polar.spherical_to_xyz
+    (see https://github.com/wradlib/wradlib/blob/master/wradlib/georef/polar.py#L28)
+
+    Parameters
+    ----------
+    elev : float
+        The elevation angle of the beam.
+    r : np.array
+        The distances along the beam.
+    azimuth : np.array
+        The azimuth angles of the beams.
+    sitecoords : np.array-like
+        The geographical coordinates for the lidar site as (x, y, z).
+        If not given, assumes zero.
+
+    Returns
+    -------
+    xyz : np.array
+        The coordinates for the bins, shape ().
 
     """
-    # Browse files
-    prog = re.compile(file_regex.encode().decode("unicode_escape"))
-    fullpath = os.path.abspath(path)
+    # if site altitude is present, use it, else assume it to be zero
+    try:
+        centalt = sitecoords[2]
+    except IndexError:
+        centalt = 0.0
 
-    data = []
+    # if no radius is given, get the approximate radius of the WGS84
+    # ellipsoid for the site's latitude
+    if r_e is None:
+        r_e = wrl.georef.projection.get_earth_radius(sitecoords[1])
+        # Set up aeqd-projection sitecoord-centered, wgs84 datum and ellipsoid
+        # use world azimuthal equidistant projection
+        projstr = (
+            "+proj=aeqd +lon_0={lon:f} +x_0=0 +y_0=0 +lat_0={lat:f} "
+            + "+ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+            + ""
+        ).format(lon=sitecoords[0], lat=sitecoords[1])
 
-    for (root, _, files) in os.walk(fullpath):
-        addpath = root.replace(fullpath, "")
+    else:
+        # Set up aeqd-projection sitecoord-centered, assuming spherical earth
+        # use Sphere azimuthal equidistant projection
+        projstr = (
+            "+proj=aeqd +lon_0={lon:f} +lat_0={lat:f} +a={a:f} "
+            "+b={b:f} +units=m +no_defs"
+        ).format(lon=sitecoords[0], lat=sitecoords[1], a=r_e, b=r_e)
 
-        for f in files:
-            result = prog.match(f)
+    rad = wrl.georef.projection.proj4_to_osr(projstr)
 
-            if result is None:
-                continue
+    r = np.asanyarray(r)
+    theta = np.asanyarray(elev)
+    phi = np.asanyarray(azimuth)
 
-            try:
-                lidar = Dataset(os.path.join(root, f), format="NETCDF4")
-                sweep = lidar["sweep_group_name"][:][0]
-                scan = lidar[sweep].variables["sweep_mode"][:]
-                fixed_angle = lidar.variables["sweep_fixed_angle"][:][0]
+    if r.ndim:
+        r = r.reshape((1,) * (3 - r.ndim) + r.shape)
 
-                if (elev_angle is not None and fixed_angle != elev_angle) or (
-                    scan_type is not None and scan != scan_type
-                ):
-                    continue
+    if phi.ndim:
+        phi = phi.reshape((1,) + phi.shape + (1,) * (2 - phi.ndim))
 
-                data.append([os.path.join(addpath, f), scan, fixed_angle])
-            except (ValueError, OSError):
-                continue
+    if not theta.ndim:
+        theta = np.broadcast_to(theta, phi.shape)
 
-    df = pd.DataFrame(data, columns=["filename", "scan_type", "fixed_angle"])
-    out = {}
-    for (stype, angle), df_task in df.groupby(["scan_type", "fixed_angle"]):
-        out[(stype, angle)] = df_task["filename"].to_list()
+    dims = 3
+    if not strict_dims:
+        if phi.ndim and theta.ndim and (theta.shape[0] == phi.shape[1]):
+            dims -= 1
+        if r.ndim and theta.ndim and (theta.shape[0] == r.shape[2]):
+            dims -= 1
 
-    return out
+    if theta.ndim and phi.ndim:
+        theta = theta.reshape(theta.shape + (1,) * (dims - theta.ndim))
+
+    z = r * np.sin(np.radians(theta)) + centalt
+    dist = r * np.cos(np.radians(theta))
+
+    if (not strict_dims) and phi.ndim and r.ndim and (r.shape[2] == phi.shape[1]):
+        z = np.squeeze(z)
+        dist = np.squeeze(dist)
+        phi = np.squeeze(phi)
+
+    x = dist * np.cos(np.radians(90 - phi))
+    y = dist * np.sin(np.radians(90 - phi))
+
+    if z.ndim:
+        z = np.broadcast_to(z, x.shape)
+
+    xyz = np.stack((x, y, z), axis=-1)
+
+    if xyz.ndim == 1:
+        xyz.shape = (1,) * 3 + xyz.shape
+    elif xyz.ndim == 2:
+        xyz.shape = (xyz.shape[0],) + (1,) * 2 + (xyz.shape[1],)
+
+    if squeeze:
+        xyz = np.squeeze(xyz)
+
+    return xyz, rad
