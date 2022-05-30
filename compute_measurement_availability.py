@@ -798,10 +798,10 @@ if __name__ == "__main__":
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     argparser.add_argument(
-        "startdate", type=str, help="the startdate (YYYYmmdd) (only month considered"
+        "startdate", type=str, help="the startdate (YYYYmmdd) (only month considered)"
     )
     argparser.add_argument(
-        "enddate", type=str, help="the enddate (YYYYmmdd) (only month considered"
+        "enddate", type=str, help="the enddate (YYYYmmdd) (only month considered)"
     )
     argparser.add_argument(
         "--task-name", type=str, default="WND-03", help="X-band task name"
