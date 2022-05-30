@@ -1,4 +1,4 @@
-"""Plot a 2-panel figure of radar and lidar availability PPIs.
+"""Plot a figure of measurement availaibility as function of range.
 
 Looks for files in directory `inpath` called
 - measurement_ranges_radar.csv"
@@ -52,11 +52,9 @@ if __name__ == "__main__":
     outpath.mkdir(parents=True, exist_ok=True)
 
     inpath = Path(args.inpath).resolve()
-    startdate = datetime.strptime(args.startdate, "%Y%m%d")
-    enddate = datetime.strptime(args.enddate, "%Y%m%d")
     plt.style.use(cfg.STYLE_FILE)
 
-    df_radar = pd.read_csv(inpath / f"measurement_ranges_radar.csv", index_col=0)
+    df_radar = pd.read_csv(inpath / f"measurement_ranges_xband.csv", index_col=0)
     df_lidar = pd.read_csv(inpath / f"measurement_ranges_lidar.csv", index_col=0)
 
     # Plot percentages

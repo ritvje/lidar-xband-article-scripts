@@ -17,6 +17,7 @@ This repository contains scripts for creating the figures for the article.
 | [`plot_ppi_blockage_map.py`](plot_ppi_blockage_map.py)                                       | Plots the PPI availability figure based on output from [`compute_measurement_availability.py`](compute_measurement_availability.py).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | [`compute_measurement_availability_weather.py`](compute_measurement_availability_weather.py) | Computes measurement availability as function of range for binned by different surface station measurements. Currently, bins scans by cloud base height and horizontal visibility if `--tol 1`, by precipitation intensity if `--tol 10`, and by nothing if `--tol 0`. Note that after running the script once, the calculation can be sped up by reading stored data with `--only-read`, even if `--tol` changes. Note that for `--tol 0`, the results differ from the results produced by [`compute_measurement_availability.py`](compute_measurement_availability.py), because here we only consider measurement times where both lidar and radar measurements exist, while that script calculates over all measurements separately. |
 | [`plot_measurement_ranges.py`](plot_measurement_ranges.py)                                   | Plot measurement availability as function of range, calculated by [`compute_measurement_availability_weather.py`](compute_measurement_availability_weather.py) with `--tol 0`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| [`plot_measurement_ranges_weather.py`](plot_measurement_ranges_weather.py)                   | Plot measurement availability as function of range binned by surface measurements, calculated by [`compute_measurement_availability_weather.py`](compute_measurement_availability_weather.py) with `--tol 1` or ``--tol 10`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## How to plot figures from the article
 
@@ -56,6 +57,13 @@ python compute_measurement_availability_weather.py 20210501 20211101 --tol 1 --o
 
 # If running first time
 python compute_measurement_availability_weather.py 20210501 20211101 --tol 1 --outpath results
+
+# Plot as function of cloud base height
+python plot_measurement_ranges_weather.py results CLHB_PT1M_INSTANT_3000 --log-scale  --outpath results --formatter m2km
+
+# Plot as function of horizontal visibility
+python plot_measurement_ranges_weather.py results VIS_PT1M_AVG_75000   --outpath results --formatter m2km
+
 ```
 
 ### Figure 12 (measurement availability as function of range for precipitation)
@@ -68,6 +76,9 @@ python compute_measurement_availability_weather.py 20210501 20211101 --tol 10 --
 
 # If running first time
 python compute_measurement_availability_weather.py 20210501 20211101 --tol 10 --outpath results
+
+# Plot as function of precipitation intensity
+python plot_measurement_ranges_weather.py results PRIO_PT10M_AVG_4  --outpath results --formatter none
 ```
 
 
