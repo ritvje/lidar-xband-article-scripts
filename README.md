@@ -18,7 +18,8 @@ This repository contains scripts for creating the figures for the article.
 | [`compute_measurement_availability_weather.py`](compute_measurement_availability_weather.py) | Computes measurement availability as function of range for binned by different surface station measurements. Currently, bins scans by cloud base height and horizontal visibility if `--tol 1`, by precipitation intensity if `--tol 10`, and by nothing if `--tol 0`. Note that after running the script once, the calculation can be sped up by reading stored data with `--only-read`, even if `--tol` changes. Note that for `--tol 0`, the results differ from the results produced by [`compute_measurement_availability.py`](compute_measurement_availability.py), because here we only consider measurement times where both lidar and radar measurements exist, while that script calculates over all measurements separately. |
 | [`plot_measurement_ranges.py`](plot_measurement_ranges.py)                                   | Plot measurement availability as function of range, calculated by [`compute_measurement_availability_weather.py`](compute_measurement_availability_weather.py) with `--tol 0`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | [`plot_measurement_ranges_weather.py`](plot_measurement_ranges_weather.py)                   | Plot measurement availability as function of range binned by surface measurements, calculated by [`compute_measurement_availability_weather.py`](compute_measurement_availability_weather.py) with `--tol 1` or ``--tol 10`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py)                           | Grid lidar and X-band radar observations to a Cartesian grid and calculate statistics from paired scans. Configurations given in [`config.py`](config.py).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py)                           | Grid lidar and X-band radar observations to a Cartesian grid and calculate statistics from paired scans. Configurations given in [`config.py`](config.py). Third argument is the radar task name.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| [`plot_gridded_lidar_xband_scatterplot.py`](plot_gridded_lidar_xband_scatterplot.py)         | Plot results from [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py) calculations. Produces a scatterplot, text file with linear fit statistics, figure with correlation values, and pair-wise scatterplots for lidar and X-band radar variables. (Small modifications allow also plotting gridded measurements with surface measurements.)                                                                                                                                                                                                                                                                                                                                                                             |
 
 ## How to plot figures from the article
 
@@ -35,7 +36,25 @@ python compute_measurement_availability.py 20210501 20211101 --task-name WND-03 
 python plot_ppi_blockage_map.py 20210501 20211101 results --outpath results
 ```
 
-### Figure 3 (measurement availability as function of range)
+### Figure 3 (scatterplot of gridded measurements)
+
+Run script [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py) for the interval. Note that it might be better to run this for one month at a time, especially if you want to compare the results per month. Remember to set paths in [`config.py`](config.py). Then plot the results with [`plot_gridded_lidar_xband_scatterplot.py`](plot_gridded_lidar_xband_scatterplot.py).
+
+```bash
+# Run per month
+python scatterplot_lidar_xband.py WND-03 202105 202105
+python scatterplot_lidar_xband.py WND-03 202106 202106
+python scatterplot_lidar_xband.py WND-03 202108 202108
+python scatterplot_lidar_xband.py WND-03 202109 202109
+python scatterplot_lidar_xband.py WND-03 202110 202110
+python scatterplot_lidar_xband.py WND-03 202111 202111
+
+# When done, plot with
+# assuming results was set as `DATA_OUTPATH` in config.py
+python plot_lidar_radar_scatterplot.py WND-03 results 202105 202111 --outpath results
+```
+
+### Figure 4 (measurement availability as function of range)
 
 Run script [`compute_measurement_availability_weather.py`](compute_measurement_availability_weather.py) with `--tol 0`, and plot the results with [`plot_measurement_ranges.py`](plot_measurement_ranges.py).
 
