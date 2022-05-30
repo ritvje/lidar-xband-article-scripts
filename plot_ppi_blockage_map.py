@@ -52,7 +52,7 @@ if __name__ == "__main__":
     argparser.add_argument("startdate", type=str, help="the startdate (YYYYmm)")
     argparser.add_argument("enddate", type=str, help="the enddate (YYYYmm)")
     argparser.add_argument(
-        "inpath", type=str, help="Path where the input files are locates"
+        "inpath", type=str, help="Path where the input files are located"
     )
     argparser.add_argument(
         "--ext",
