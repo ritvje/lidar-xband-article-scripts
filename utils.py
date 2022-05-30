@@ -6,6 +6,8 @@ Includes functions
 - lidar_to_cart
 - radar_to_cart
 - lidar_spherical_to_xyz
+- get_windcube_lidar_data
+- get_radar_data
 
 Author: Jenna Ritvanen <jenna.ritvanen@fmi.fi>
 
@@ -15,6 +17,8 @@ import pyproj
 import wradlib as wrl
 import requests
 import pandas as pd
+from datetime import datetime
+from attrdict import AttrDict
 
 
 def query_Smartmet_station(
@@ -442,3 +446,163 @@ def lidar_spherical_to_xyz(
         xyz = np.squeeze(xyz)
 
     return xyz, rad
+
+
+def get_windcube_lidar_data(
+    lidar, QIND_thr=95, use_quality_flag=True, pad_az=False, CNR_thr=None
+):
+    """Get lidar data that is required for calculating gridded statistics.
+
+    Parameters
+    ----------
+    lidar : netCDF4.Dataset
+        The lidar dataset read from the lidar netcdf4 file.
+    QIND_thr : float
+        Threshold between 0 and 100 applied to the `radial_wind_speed_ci` field.
+        Applied if `use_quality_flag` False.
+    use_quality_flag : bool
+        Whether to use `radial_wind_speed_status` field to filter data.
+    pad_az : bool
+        Whether to pad azimuth field with last value
+        (e.g. to help with plotting in sector plots).
+    CNR_thr : float
+        Threshold to filter data by carrier-to-noise ratio.
+
+    Returns
+    -------
+    dict
+        Dictionary of data.
+
+    """
+    sweep = lidar["sweep_group_name"][:][0]
+    data = {}
+    data["lonlat"] = (float(lidar["longitude"][:]), float(lidar["latitude"][:]))
+
+    # Range
+    data["r_los"] = np.array(lidar[sweep]["range"][:])
+    data["dr"] = float(lidar[sweep]["range"].meters_between_gates)
+    # Elevation
+    data["elev"] = float(lidar["sweep_fixed_angle"][:])
+    # Azimuth
+    data["azimuth"] = np.array(lidar[sweep]["azimuth"][:])
+
+    data["total_az"] = np.diff(data["azimuth"]).sum()
+
+    if pad_az:
+        # Pad last azimuth to help with plotting
+        data["azimuth"] = np.pad(
+            data["azimuth"],
+            ((0, 1)),
+            mode="constant",
+            constant_values=(
+                data["azimuth"][-1] + (data["azimuth"][1] - data["azimuth"][0])
+            ),
+        )
+
+    data["r_ground"] = data["r_los"] * np.cos(np.radians(data["elev"]))
+
+    # There is a variable named timestamps, but for some reason it is
+    # not always parsed correctly. So do this manually from
+    # seconds after 1/1/1970
+    data["times"] = np.array(lidar[sweep]["time"][:], dtype="datetime64[s]")
+
+    # Doppler velocity
+    data["V"] = np.ma.array(lidar[sweep]["radial_wind_speed"][:])
+    data["WRAD"] = np.ma.array(lidar[sweep]["doppler_spectrum_width"][:])
+
+    data["cnr"] = np.array(lidar[sweep]["cnr"][:])
+    # Quality index
+    if use_quality_flag:
+        mask = lidar[sweep]["radial_wind_speed_status"][:].data.astype(bool)
+        data["V"][~mask] = np.ma.masked
+    else:
+        data["QIND"] = np.array(lidar[sweep]["radial_wind_speed_ci"][:])
+        data["V"][data["QIND"] < QIND_thr] = np.ma.masked
+
+    if CNR_thr is not None:
+        data["V"][data["cnr"] < CNR_thr] = np.ma.masked
+
+    data["altitude"] = np.sin(np.radians(data["elev"])) * data["r_los"]
+
+    gate_xyz, _ = lidar_spherical_to_xyz(
+        data["elev"], data["r_los"], data["azimuth"][:-1], sitecoords=(0, 0, 29)
+    )
+
+    data["gate_x"] = gate_xyz[..., 0]
+    data["gate_y"] = gate_xyz[..., 1]
+    data["gate_z"] = gate_xyz[..., 2]
+
+    return data
+
+
+def get_radar_data(radar, alt=29, SQI_thr=None):
+    """Get radar data that is required for calculating gridded statistics.
+
+    Parameters
+    ----------
+    radar : pyart.core.radar.Radar object
+        The radar dataset read from radar file.
+    alt : float
+        Altitude of the instrument.
+    SQI_thr : float
+        Threshold to filter data by signal quality index.
+
+    Returns
+    -------
+    dict
+        Dictionary of data.
+
+    """
+    data = AttrDict()
+
+    data["V"] = radar.fields["velocity"]["data"][
+        0 : radar.sweep_end_ray_index["data"][0] + 1, :
+    ]
+    data["lonlat"] = (radar.longitude["data"][0], radar.latitude["data"][0])
+    data["time"] = datetime.strptime(
+        radar.time["units"], "seconds since %Y-%m-%dT%H:%M:%SZ"
+    )
+
+    # range and azimuth values for radar for plotting
+    data["nrays"] = radar.nrays
+    data["ngates"] = radar.ngates
+    data["range_res"] = radar.range["meters_between_gates"]
+    data["r_los"] = radar.range["data"] + radar.range["meters_between_gates"][0] / 2
+    data["azimuth"] = radar.azimuth["data"][
+        0 : radar.sweep_end_ray_index["data"][0] + 1
+    ]
+    data["total_az"] = np.diff(data["azimuth"]).sum()
+    data["elev"] = radar.elevation["data"][0]
+    data["altitude"] = alt + radar.gate_altitude["data"][0, :]
+    data["r_ground"] = wrl.georef.misc.bin_distance(
+        data["r_los"], data["elev"], data["altitude"][0], 6371e3
+    )
+    data["gate_x"] = radar.gate_x["data"]
+    data["gate_y"] = radar.gate_y["data"]
+    data["gate_z"] = radar.gate_z["data"]
+
+    data["reflectivity"] = radar.fields["reflectivity"]["data"][
+        0 : radar.sweep_end_ray_index["data"][0] + 1, :
+    ]
+
+    data["WRAD"] = radar.fields["spectrum_width"]["data"][
+        0 : radar.sweep_end_ray_index["data"][0] + 1, :
+    ]
+
+    data["SQI"] = radar.fields["normalized_coherent_power"]["data"]
+    data["SQI"].set_fill_value(0.0)
+
+    if "signal_to_noise_ratio" in radar.fields.keys():
+        data["SNR"] = radar.fields["signal_to_noise_ratio"]["data"]
+        data["SNR"].set_fill_value(np.nan)
+
+    if SQI_thr is not None:
+        mask = (
+            data["SQI"].filled()[0 : radar.sweep_end_ray_index["data"][0] + 1, :]
+            < SQI_thr
+        )
+        data["V"].mask[mask] = True
+        data["reflectivity"].mask[mask] = True
+        data["WRAD"].mask[mask] = True
+
+    return data

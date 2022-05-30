@@ -1,4 +1,7 @@
-"""Compute measurement range for the instruments."""
+"""Compute measurement range for the instruments binned by surface measurements.
+
+Author: Jenna Ritvanen <jenna.ritvanen@fmi.fi>
+"""
 import os
 import sys
 import argparse

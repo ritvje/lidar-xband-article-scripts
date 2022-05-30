@@ -18,9 +18,6 @@ DASK_NWORKERS = 10
 DASK_SCHEDULER = "processes"
 # DASK_SCHEDULER = "single-threaded"
 
-PLOT_FIGURES = False
-PLOT_OUTPUT_FIGURE = False
-FIG_OUTPATH = "./figures"
 STYLE_FILE = os.path.join(
     CWD,
     "presentation.mplstyle"
