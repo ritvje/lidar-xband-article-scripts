@@ -20,6 +20,7 @@ This repository contains scripts for creating the figures for the article.
 | [`plot_measurement_ranges_weather.py`](plot_measurement_ranges_weather.py)                   | Plot measurement availability as function of range binned by surface measurements, calculated by [`compute_measurement_availability_weather.py`](compute_measurement_availability_weather.py) with `--tol 1` or ``--tol 10`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py)                           | Grid lidar and X-band radar observations to a Cartesian grid and calculate statistics from paired scans. Configurations given in [`config.py`](config.py). Third argument is the radar task name.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [`plot_gridded_lidar_xband_scatterplot.py`](plot_gridded_lidar_xband_scatterplot.py)         | Plot results from [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py) calculations. Produces a scatterplot, text file with linear fit statistics, figure with correlation values, and pair-wise scatterplots for lidar and X-band radar variables. (Small modifications allow also plotting gridded measurements with surface measurements.)                                                                                                                                                                                                                                                                                                                                                                             |
+| [`plot_surface_meas_distributions.py`](plot_surface_meas_distributions.py)                   | Plot distributions of fraction of available measurements a surface measurement based on output from [`plot_gridded_lidar_xband_scatterplot.py`](plot_gridded_lidar_xband_scatterplot.py)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## How to plot figures from the article
 
@@ -49,7 +50,7 @@ python scatterplot_lidar_xband.py WND-03 202109 202109
 python scatterplot_lidar_xband.py WND-03 202110 202110
 python scatterplot_lidar_xband.py WND-03 202111 202111
 
-# When done, plot with
+# When done, plot with this
 # assuming results was set as `DATA_OUTPATH` in config.py
 python plot_lidar_radar_scatterplot.py WND-03 results 202105 202111 --outpath results
 ```
@@ -65,6 +66,30 @@ python compute_measurement_availability_weather.py 20210501 20211101 --tol 0 --o
 
 # After calculation is done
 python plot_measurement_ranges.py results --outpath results
+```
+
+### Figures 5, 9, and 11 (distributions of fraction of available measurements)
+
+Run script [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py) for the interval, and plot with [`plot_surface_meas_distributions.py`](plot_surface_meas_distributions.py).
+
+```bash
+# Run per month (same as for figure 4)
+python scatterplot_lidar_xband.py WND-03 202105 202105
+python scatterplot_lidar_xband.py WND-03 202106 202106
+python scatterplot_lidar_xband.py WND-03 202108 202108
+python scatterplot_lidar_xband.py WND-03 202109 202109
+python scatterplot_lidar_xband.py WND-03 202110 202110
+python scatterplot_lidar_xband.py WND-03 202111 202111
+
+# When done, plot with these
+# assuming results was set as `DATA_OUTPATH` in config.py
+
+# Horizontal visibility and cloud base height
+python plot_stats_full_data.py WND-03 results 202105 202111 --outpath results --tol 1
+
+# Precipitation intensity
+python plot_stats_full_data.py WND-03 results 202105 202111 --outpath results --tol 10
+
 ```
 
 ### Figures 6 and 10 (measurement availability as function of range for cloud base height and visibility)
@@ -105,4 +130,3 @@ python plot_measurement_ranges_weather.py results PRIO_PT10M_AVG_4  --outpath re
 ### Figures 7, 8, and 13 (case figures)
 
 Run [`make_case_figures.sh`](make_case_figures.sh). Set settings and file root path in the beginning of the script.
-

@@ -1,11 +1,15 @@
-"""Draw scatterplots of lidar and X band radar data."""
+"""Plot scatterplots of  gridded lidar and X band radar data.
+
+Requires zarr-array outputs from compute_gridded_lidar_xband.py
+
+Author: Jenna Ritvanen <jenna.ritvanen@fmi.fi>
+
+"""
 import os
 import argparse
 import warnings
 from datetime import datetime
 import numpy as np
-from numpy.random import default_rng
-from scipy import stats
 import ennemi as mi
 import textwrap
 import pandas as pd
@@ -15,14 +19,13 @@ import matplotlib as mlt
 import matplotlib.gridspec as gridspec
 import matplotlib.ticker as ticker
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib.pyplot as plt
 import seaborn as sns
 import statsmodels.api as sm
 from statsmodels.tools.eval_measures import rmse, bias
+
 import config as cfg
-from radar_plotting.plotting import draft, final, use_tex
-import utils
+from radar_plotting.plotting import final
 
 warnings.simplefilter(action="ignore")
 
