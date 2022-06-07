@@ -26,7 +26,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import cartopy.crs as ccrs
 
-plt.style.use("../presentation.mplstyle")
+plt.style.use("./presentation.mplstyle")
 
 
 from radar_plotting import plotting
@@ -76,17 +76,17 @@ if __name__ == "__main__":
     outpath.mkdir(parents=True, exist_ok=True)
 
     inpath = Path(args.inpath).resolve()
-    startdate = datetime.strptime(args.startdate, "%Y%m%d")
-    enddate = datetime.strptime(args.enddate, "%Y%m%d")
+    startdate = datetime.strptime(args.startdate, "%Y%m")
+    enddate = datetime.strptime(args.enddate, "%Y%m")
 
     pct_xband = np.loadtxt(
-        inpath / f"xband_obs_pct_{startdate:%H%m%d}_{enddate:%Y%m%d}_pct.txt"
+        inpath / f"xband_obs_pct_{startdate:%Y%m%d}_{enddate:%Y%m%d}_pct.txt"
     )
     xband_rr = np.loadtxt(
-        inpath / f"xband_obs_pct_{startdate:%H%m%d}_{enddate:%Y%m%d}_range.txt"
+        inpath / f"xband_obs_pct_{startdate:%Y%m%d}_{enddate:%Y%m%d}_range.txt"
     )
     xband_az = np.loadtxt(
-        inpath / f"xband_obs_pct_{startdate:%H%m%d}_{enddate:%Y%m%d}_azimuth.txt"
+        inpath / f"xband_obs_pct_{startdate:%Y%m%d}_{enddate:%Y%m%d}_azimuth.txt"
     )
 
     pct_lidar = np.loadtxt(

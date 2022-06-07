@@ -42,12 +42,12 @@ Run script [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py) fo
 
 ```bash
 # Run per month
-python scatterplot_lidar_xband.py WND-03 202105 202105 --outpath results
-python scatterplot_lidar_xband.py WND-03 202106 202106 --outpath results
-python scatterplot_lidar_xband.py WND-03 202108 202108 --outpath results
-python scatterplot_lidar_xband.py WND-03 202109 202109 --outpath results
-python scatterplot_lidar_xband.py WND-03 202110 202110 --outpath results
-python scatterplot_lidar_xband.py WND-03 202111 202111 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202105 202105 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202106 202106 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202108 202108 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202109 202109 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202110 202110 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202111 202111 --outpath results
 
 # When done, plot with this
 python plot_lidar_radar_scatterplot.py WND-03 results 202105 202111 --outpath results
@@ -72,12 +72,12 @@ Run script [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py) fo
 
 ```bash
 # Run per month (same as for figure 4)
-python scatterplot_lidar_xband.py WND-03 202105 202105 --outpath results
-python scatterplot_lidar_xband.py WND-03 202106 202106 --outpath results
-python scatterplot_lidar_xband.py WND-03 202108 202108 --outpath results
-python scatterplot_lidar_xband.py WND-03 202109 202109 --outpath results
-python scatterplot_lidar_xband.py WND-03 202110 202110 --outpath results
-python scatterplot_lidar_xband.py WND-03 202111 202111 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202105 202105 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202106 202106 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202108 202108 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202109 202109 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202110 202110 --outpath results
+python compute_gridded_lidar_xband.py WND-03 202111 202111 --outpath results
 
 # When done, plot with these
 # Horizontal visibility and cloud base height

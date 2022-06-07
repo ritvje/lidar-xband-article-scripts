@@ -1,3 +1,6 @@
 [submodule "radar_plotting"]
 	path = radar_plotting
 	url = git@github.com:ritvje/radar_plotting.git
+[submodule "vcor_dual_prf"]
+	path = vcor_dual_prf
+	url = git@github.com:ritvje/vcor_dual_prf.git

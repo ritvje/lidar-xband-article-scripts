@@ -29,7 +29,7 @@ from pyart.io.sigmet import SigmetFile
 import utils
 import file_utils
 import config as cfg
-import vcor_dual_prf as vcor
+import vcor_dual_prf.vcor_dual_prf.vcor_dual_prf as vcor
 
 warnings.simplefilter(action="ignore")
 
@@ -417,7 +417,6 @@ def DescrStatsW2data(s):
 # @profile
 def main(startdate, enddate, radar_type, outpath):
     # Read config
-    cband_cfg = cfg.RADAR_INFO["fivan"]
     lidar_cfg = cfg.LIDAR_INFO["vaisala"]
     basepath = cfg.MWSA_DATA_PATH
 
@@ -428,7 +427,7 @@ def main(startdate, enddate, radar_type, outpath):
     # Itialize zarr arrays for storing output values
     xl_synchronizer = zarr.ProcessSynchronizer(outpath / f"xl_{radar_type}.sync")
     xl_data_output = zarr.open_array(
-        outpath / f"scatterplot_{startdate:%Y%m}_{enddate:%Y%m}_{radar_type}_xl",
+        str(outpath / f"scatterplot_{startdate:%Y%m}_{enddate:%Y%m}_{radar_type}_xl"),
         mode="w",
         shape=(1, 8),
         chunks=(1000, 8),

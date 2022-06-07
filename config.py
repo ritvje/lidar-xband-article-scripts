@@ -13,7 +13,7 @@ LIDAR_PATH = lambda d: f"{MWSA_DATA_PATH}/{d:%Y/%m/%d}/lidar"
 XBAND_PATH = lambda d: f"{MWSA_DATA_PATH}/{d:%Y/%m/%d}/xband"
 
 # Multiprocessing with dask
-DASK_NWORKERS = 10
+DASK_NWORKERS = 4
 DASK_SCHEDULER = "processes"
 # For debugging, disable multiprocessing
 # DASK_SCHEDULER = "single-threaded"
@@ -24,18 +24,18 @@ STYLE_FILE = os.path.join(CWD, "presentation.mplstyle")
 # Cartesian mask (bool array) that is used to remove blocked grid points
 OBS_MASK_PATH = os.path.join(
     CWD,
-    "analysis_14.5km/mask_lidar_202105_202111_WND-03_cnr_250m_14km.txt",
+    "article_analysis/lidar_cart_mask_20210501_20211101_250m_14km.txt",
 )
 
 # Fraction of available measurements in each bin in polar coordinates, used to remove blocked rays
 POLAR_OBS_MASK_LIDAR_PATH = os.path.join(
     CWD,
-    "observation_masks/lidar_obs_pct_20210501_20211031_pct.txt",
+    "article_analysis/lidar_obs_pct_20210501_20211101_pct.txt",
     # "mwsa_ppi1_g/lidar_obs_pct_20210501_20211101_pct.txt",
 )
 POLAR_OBS_MASK_XBAND_PATH = os.path.join(
     CWD,
-    "observation_masks/xband_obs_pct_20210501_20211031_pct.txt",
+    "article_analysis/xband_obs_pct_20210501_20211101_pct.txt",
     # "mwsa_ppi1_g/xband_obs_pct_20210501_20211101_pct.txt",
 )
 # Threshold for blocking
