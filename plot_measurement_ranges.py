@@ -70,19 +70,17 @@ if __name__ == "__main__":
     df_radar.index *= 1e-3
     df_lidar.index *= 1e-3
 
-    l3 = ax.plot(df_lidar.index, df_lidar.pct, "C0", ls="-", label=f"Lidar", lw=2)
-    l4 = ax.plot(
-        df_radar.index, df_radar.pct, "C1", ls="-", label=f"X-band radar", lw=2
-    )
+    l3 = ax.plot(df_lidar.index, df_lidar.pct, "k", ls="--", label=f"Lidar", lw=2)
+    l4 = ax.plot(df_radar.index, df_radar.pct, "k", ls="-", label=f"X-band radar", lw=2)
 
     ax.legend()
     ax.grid(which="both", alpha=0.5)
     ax.set_xlim((0, args.maxdist))
 
-    ax.set_ylabel("Fraction")
+    ax.set_ylabel("Fraction of available measurements")
     ax.set_xlabel("Range [km]")
 
-    ax.set_title(f"Fraction of available measurements")
+    # ax.set_title(f"Fraction of available measurements")
     fig.savefig(
         outpath / f"lidar_xband_measurement_ranges.pdf",
         dpi=args.dpi,

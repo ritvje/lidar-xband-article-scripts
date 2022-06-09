@@ -77,7 +77,9 @@ if __name__ == "__main__":
 
     inpath = Path(args.inpath).resolve()
     startdate = datetime.strptime(args.startdate, "%Y%m")
-    enddate = datetime.strptime(args.enddate, "%Y%m")
+    enddate = (
+        datetime.strptime(args.enddate, "%Y%m") + pd.offsets.MonthEnd(0)
+    ).to_pydatetime()
 
     pct_xband = np.loadtxt(
         inpath / f"xband_obs_pct_{startdate:%Y%m%d}_{enddate:%Y%m%d}_pct.txt"
@@ -150,7 +152,7 @@ if __name__ == "__main__":
         fig=fig,
         no_map=True,
         map="toner-line",
-        sharey=ax_lidar,
+        sharey=None,
         ncols=2,
         index=2,
     )
@@ -216,5 +218,9 @@ if __name__ == "__main__":
         ax.tick_params(axis="both", which="major", labelsize="small")
 
         ax.set_aspect(1)
+
+    ax_radar.set_yticks([])
+    ax_radar.set_yticklabels([])
+    ax_radar.set_ylabel("")
 
     fig.savefig(outfn, dpi=args.dpi, bbox_inches="tight")

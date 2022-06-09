@@ -24,19 +24,17 @@ STYLE_FILE = os.path.join(CWD, "presentation.mplstyle")
 # Cartesian mask (bool array) that is used to remove blocked grid points
 OBS_MASK_PATH = os.path.join(
     CWD,
-    "article_analysis/lidar_cart_mask_20210501_20211101_250m_14km.txt",
+    "article_analysis/lidar_cart_mask_20210501_20211130_250m_14km.txt",
 )
 
 # Fraction of available measurements in each bin in polar coordinates, used to remove blocked rays
 POLAR_OBS_MASK_LIDAR_PATH = os.path.join(
     CWD,
-    "article_analysis/lidar_obs_pct_20210501_20211101_pct.txt",
-    # "mwsa_ppi1_g/lidar_obs_pct_20210501_20211101_pct.txt",
+    "article_analysis/lidar_obs_pct_20210501_20211130_pct.txt",
 )
 POLAR_OBS_MASK_XBAND_PATH = os.path.join(
     CWD,
-    "article_analysis/xband_obs_pct_20210501_20211101_pct.txt",
-    # "mwsa_ppi1_g/xband_obs_pct_20210501_20211101_pct.txt",
+    "article_analysis/xband_obs_pct_20210501_20211130_pct.txt",
 )
 # Threshold for blocking
 POLAR_OBS_MASK_THR = 0.05
