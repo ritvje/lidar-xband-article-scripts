@@ -774,13 +774,7 @@ if __name__ == "__main__":
     df.sort_index(inplace=True)
 
     # Load mask and count number of observations
-    # mask = np.loadtxt(os.path.join("tmp_data",
-    # "mask_xband_all_WND-03_normalized_coherent_power_250m_15km.txt"))
-    mask = np.loadtxt(
-        os.path.join(
-            "observation_masks", "lidar_cart_mask_20210501_20211031_250m_12km.txt"
-        )
-    )
+    mask = np.loadtxt(cfg.OBS_MASK_PATH)
     nobs = mask.sum()
 
     df[f"n_lidar_normalized"] = df["nobs_lidar"] / nobs
@@ -795,7 +789,6 @@ if __name__ == "__main__":
         final(figsize=(8, 5), constrained_layout=True)(plot_nobs_distribution)(
             df,
             "full",
-            prefix="xl",
             x="VIS_PT1M_AVG",
             ny=20,
             xmin=0,
@@ -808,25 +801,23 @@ if __name__ == "__main__":
             outpath=outpath,
             title=False,
         )
-        final(figsize=(8, 5), constrained_layout=True)(plot_nobs_distribution)(
-            df,
-            "full",
-            prefix="xl",
-            x="CLHB_PT1M_INSTANT",
-            ny=20,
-            xmin=0,
-            xmax=8e3,
-            xres=250,
-            vmin=vmin,
-            vmax=vmax,
-            datesuffix=datesuffix,
-            outpath=outpath,
-            title=False,
-        )
+        # final(figsize=(8, 5), constrained_layout=True)(plot_nobs_distribution)(
+        #     df,
+        #     "full",
+        #     x="CLHB_PT1M_INSTANT",
+        #     ny=20,
+        #     xmin=0,
+        #     xmax=8e3,
+        #     xres=250,
+        #     vmin=vmin,
+        #     vmax=vmax,
+        #     datesuffix=datesuffix,
+        #     outpath=outpath,
+        #     title=False,
+        # )
         final(figsize=(8, 5), constrained_layout=True)(plot_nobs_distribution)(
             df,
             "subset",
-            prefix="xl",
             x="CLHB_PT1M_INSTANT",
             ny=50,
             x_formatter=m_formatter,
@@ -842,24 +833,23 @@ if __name__ == "__main__":
             title=False,
         )
 
-        final(figsize=(8, 5), constrained_layout=True)(plot_log_nobs_distribution)(
-            df,
-            "log_subset",
-            prefix="xl",
-            x="CLHB_PT1M_INSTANT",
-            ny=50,
-            x_formatter=m_formatter,
-            x_unit="m",
-            nmin=1,
-            xmin=0,
-            xmax=3e3,
-            xres=50,
-            vmin=vmin,
-            vmax=0.005,
-            datesuffix=datesuffix,
-            outpath=outpath,
-            title=False,
-        )
+        # final(figsize=(8, 5), constrained_layout=True)(plot_log_nobs_distribution)(
+        #     df,
+        #     "log_subset",
+        #     x="CLHB_PT1M_INSTANT",
+        #     ny=50,
+        #     x_formatter=m_formatter,
+        #     x_unit="m",
+        #     nmin=1,
+        #     xmin=0,
+        #     xmax=3e3,
+        #     xres=50,
+        #     vmin=vmin,
+        #     vmax=0.005,
+        #     datesuffix=datesuffix,
+        #     outpath=outpath,
+        #     title=False,
+        # )
 
     elif args.tol == 10:
         # Needs to have tolerance 10
@@ -880,19 +870,19 @@ if __name__ == "__main__":
             title=False,
         )
 
-        final(figsize=(8, 5), constrained_layout=True)(plot_log_nobs_distribution)(
-            df,
-            "log_full",
-            x="PRIO_PT10M_AVG",
-            ny=40,
-            xmin=0.1,
-            xmax=4,
-            xres=0.1,
-            vmin=vmin,
-            vmax=vmax,
-            x_unit="mm h$^{-1}$",
-            x_formatter=mmh_formatter,
-            datesuffix=datesuffix,
-            outpath=outpath,
-            title=False,
-        )
+        # final(figsize=(8, 5), constrained_layout=True)(plot_log_nobs_distribution)(
+        #     df,
+        #     "log_full",
+        #     x="PRIO_PT10M_AVG",
+        #     ny=40,
+        #     xmin=0.1,
+        #     xmax=4,
+        #     xres=0.1,
+        #     vmin=vmin,
+        #     vmax=vmax,
+        #     x_unit="mm h$^{-1}$",
+        #     x_formatter=mmh_formatter,
+        #     datesuffix=datesuffix,
+        #     outpath=outpath,
+        #     title=False,
+        # )

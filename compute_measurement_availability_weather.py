@@ -19,19 +19,14 @@ import seaborn as sns
 mlt.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import dask
 import dask.bag as db
 import dask.array as da
 import zarr
-import cartopy.crs as ccrs
 import pyart
 import utils
 import file_utils
 import config as cfg
-from radar_plotting import plotting
-from radar_plotting import plotconfig as pcfg
 
 warnings.simplefilter(action="ignore")
 
@@ -201,7 +196,7 @@ def main(
     radar_dsize = (360, 866)
 
     get_xband_files = partial(
-        utils.get_sigmet_file_list_by_task,
+        file_utils.get_sigmet_file_list_by_task,
         task_name=xband_task,
     )
 
@@ -300,17 +295,17 @@ def main(
 
     # Initialize zarr arrays for storing output values
     mode = "r" if only_read_data else "w"
-    lidar_synchronizer = zarr.ProcessSynchronizer(str(outpath / f"lidar.sync"))
+    lidar_synchronizer = zarr.ProcessSynchronizer(str(outpath / f"lidar_weather.sync"))
     lidar_data_output = zarr.open_array(
-        str(outpath / f"lidar_{startdate:%Y%m}_{enddate:%Y%m}.zarr"),
+        str(outpath / f"lidar_weather_{startdate:%Y%m}_{enddate:%Y%m}.zarr"),
         mode=mode,
         shape=(len(df), *lidar_dsize),
         chunks=(1000, *lidar_dsize),
         synchronizer=lidar_synchronizer,
     )
-    xband_synchronizer = zarr.ProcessSynchronizer(str(outpath / f"xband.sync"))
+    xband_synchronizer = zarr.ProcessSynchronizer(str(outpath / f"xband_weather.sync"))
     xband_data_output = zarr.open_array(
-        str(outpath / f"radar_{startdate:%Y%m}_{enddate:%Y%m}.zarr"),
+        str(outpath / f"radar_weather_{startdate:%Y%m}_{enddate:%Y%m}.zarr"),
         mode=mode,
         shape=(len(df), *radar_dsize),
         chunks=(500, *radar_dsize),
@@ -755,8 +750,10 @@ if __name__ == "__main__":
     )
 
     args = argparser.parse_args()
-    startdate = datetime.strptime(args.startdate, "%Y%m%d")
-    enddate = datetime.strptime(args.enddate, "%Y%m%d")
+    startdate = datetime.strptime(args.startdate, "%Y%m")
+    enddate = (
+        datetime.strptime(args.enddate, "%Y%m") + pd.offsets.MonthEnd(0)
+    ).to_pydatetime()
 
     outpath = Path(args.outpath)
 

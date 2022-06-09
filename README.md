@@ -30,10 +30,10 @@ Run script [`compute_measurement_availability.py`](compute_measurement_availabil
 For example:
 
 ```bash
-python compute_measurement_availability.py 20210501 20211101 --task-name WND-03 --outpath results
+python compute_measurement_availability.py 20210501 20211130 --task-name WND-03 --outpath results
 
 # After calculation is done
-python plot_ppi_blockage_map.py 20210501 20211101 results --outpath results
+python plot_ppi_blockage_map.py 20210501 20211130 results --outpath results
 ```
 
 ### Figure 3 (scatterplot of gridded measurements)
@@ -50,7 +50,7 @@ python compute_gridded_lidar_xband.py WND-03 202110 202110 --outpath results
 python compute_gridded_lidar_xband.py WND-03 202111 202111 --outpath results
 
 # When done, plot with this
-python plot_lidar_radar_scatterplot.py WND-03 results 202105 202111 --outpath results
+python plot_gridded_lidar_xband_scatterplot.py WND-03 results 202105 202111 --outpath results
 ```
 
 ### Figure 4 (measurement availability as function of range)
@@ -60,7 +60,7 @@ Run script [`compute_measurement_availability_weather.py`](compute_measurement_a
 For example:
 
 ```bash
-python compute_measurement_availability_weather.py 20210501 20211101 --tol 0 --outpath results
+python compute_measurement_availability_weather.py 20210501 20211130 --tol 0 --outpath results
 
 # After calculation is done
 python plot_measurement_ranges.py results --outpath results
@@ -81,10 +81,11 @@ python compute_gridded_lidar_xband.py WND-03 202111 202111 --outpath results
 
 # When done, plot with these
 # Horizontal visibility and cloud base height
-python plot_stats_full_data.py WND-03 results 202105 202111 --outpath results --tol 1
+python plot_surface_meas_distributions.py WND-03 results 202105 202109 --outpath results --tol 1
+python plot_surface_meas_distributions.py WND-03 results 202110 202111 --outpath results --tol 1
 
 # Precipitation intensity
-python plot_stats_full_data.py WND-03 results 202105 202111 --outpath results --tol 10
+python plot_surface_meas_distributions.py WND-03 results 202105 202111 --outpath results --tol 10
 
 ```
 
@@ -94,10 +95,10 @@ Run script [`compute_measurement_availability_weather.py`](compute_measurement_a
 
 ```bash
 # If script was run before
-python compute_measurement_availability_weather.py 20210501 20211101 --tol 1 --outpath results --only-read
+python compute_measurement_availability_weather.py 202105 202111 --tol 1 --outpath results --only-read
 
 # If running first time
-python compute_measurement_availability_weather.py 20210501 20211101 --tol 1 --outpath results
+python compute_measurement_availability_weather.py 202105 202111 --tol 1 --outpath results
 
 # Plot as function of cloud base height
 python plot_measurement_ranges_weather.py results CLHB_PT1M_INSTANT_3000 --log-scale  --outpath results --formatter m2km
@@ -113,10 +114,10 @@ Run script [`compute_measurement_availability_weather.py`](compute_measurement_a
 
 ```bash
 # If script was run before
-python compute_measurement_availability_weather.py 20210501 20211101 --tol 10 --outpath results --only-read
+python compute_measurement_availability_weather.py 202105 202111 --tol 10 --outpath results --only-read
 
 # If running first time
-python compute_measurement_availability_weather.py 20210501 20211101 --tol 10 --outpath results
+python compute_measurement_availability_weather.py 202105 202111 --tol 10 --outpath results
 
 # Plot as function of precipitation intensity
 python plot_measurement_ranges_weather.py results PRIO_PT10M_AVG_4  --outpath results --formatter none

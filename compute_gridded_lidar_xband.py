@@ -96,7 +96,7 @@ def worker(
         CNR_thr=cfg.CNR_THR,
         QIND_thr=0,
     )
-    dxband = utils.get_radar_data(xband, altitude=35, SQI_thr=None)
+    dxband = utils.get_radar_data(xband, alt=35, SQI_thr=None)
 
     # These are no longer used
     del lidar, xband

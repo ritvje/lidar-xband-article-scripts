@@ -83,7 +83,7 @@ def plot_linear_fit_plot(
         figure=fig,
     )
     ax = fig.add_subplot(gs[0, 0])
-    minmax_vel = 50
+    minmax_vel = 30
 
     std_max = np.round(np.sqrt(df["Doppler V var [m$^2$s$^{-2}$]"].values).max(), 1)
 
@@ -606,7 +606,7 @@ if __name__ == "__main__":
     enddate = datetime.strptime(args.enddate, "%Y%m")
     plt.style.use(cfg.STYLE_FILE)
 
-    SCATTERPLOT_EXT = "png"
+    SCATTERPLOT_EXT = "pdf"
 
     outpath = Path(args.outpath)
 

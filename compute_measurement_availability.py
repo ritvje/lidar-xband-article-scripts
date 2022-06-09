@@ -213,7 +213,6 @@ def main(
     get_xband_files = partial(
         file_utils.get_sigmet_file_list_by_task,
         task_name=xband_task,
-        # file_regex="([0-9]{12})_VAN.PPI(1_G|2_H|3_H).raw",
     )
 
     # Util func to get date from xband path
