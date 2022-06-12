@@ -46,7 +46,7 @@ The script should be run with only one process (in `config.py` `DASK_NWORKERS=1`
 python run_scatterplot.py WND-03 202105 202111 results --month_splits 4
 
 # When done, plot with this
-python plot_gridded_lidar_xband_scatterplot.py WND-03 results 20210501 20211130 --outpath results
+python plot_gridded_lidar_xband_scatterplot.py WND-03 results 202105 202111 --outpath results
 ```
 
 ### Figure 4 (measurement availability as function of range)
