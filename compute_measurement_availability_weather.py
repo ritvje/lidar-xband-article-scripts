@@ -30,13 +30,7 @@ import config as cfg
 
 warnings.simplefilter(action="ignore")
 
-params = [
-    "utctime",
-    "stationname",
-    "PRIO_PT10M_AVG",
-    "CLHB_PT1M_INSTANT",
-    "VIS_PT1M_AVG",
-]
+
 names = {
     "utctime": "Time (UTC)",
     "stationname": "Station name",
@@ -288,10 +282,13 @@ def main(
             right_index=True,
             left_index=True,
             tolerance=tol,
-            direction="backward",
+            direction="nearest",
         )
     else:
         dff = df
+
+    # Drop duplicates
+    dff.drop_duplicates(subset=["lidarfn", "xbandfn"], inplace=True)
 
     # Initialize zarr arrays for storing output values
     mode = "r" if only_read_data else "w"
@@ -371,7 +368,7 @@ def main(
         )
 
         # Filter with weather data
-        if args.tol == 1:
+        if args.var == "clhb":
             wvar = "CLHB_PT1M_INSTANT"
             limits = np.array(
                 [0, 100, 200, 300, 400, 500, 1000, 1500, 2000, 2500, 3000]
@@ -395,6 +392,7 @@ def main(
                 wvar,
                 cbar_formatter=m2km_formatter,
             )
+        elif args.var == "vis":
 
             wvar = "VIS_PT1M_AVG"
             limits = np.arange(0, 80e3, 5000)
@@ -419,7 +417,7 @@ def main(
                 cbar_formatter=m2km_formatter,
             )
 
-        elif args.tol == 10:
+        elif args.var == "prio":
             wvar = "PRIO_PT10M_AVG"
             limits = np.arange(0, 4.1, 0.25)
 
@@ -748,6 +746,13 @@ if __name__ == "__main__":
         default=1,
         help="Tolerance for merging weather observations, minutes",
     )
+    argparser.add_argument(
+        "--var",
+        type=str,
+        default="none",
+        choices=["prio", "vis", "clhb", "none"],
+        help="Variable that is calculated",
+    )
 
     args = argparser.parse_args()
     startdate = datetime.strptime(args.startdate, "%Y%m")
@@ -756,6 +761,20 @@ if __name__ == "__main__":
     ).to_pydatetime()
 
     outpath = Path(args.outpath)
+
+    params = [
+        "utctime",
+        "stationname",
+        # "PRIO_PT10M_AVG",
+        # "CLHB_PT1M_INSTANT",
+        # "VIS_PT1M_AVG",
+    ]
+    if args.var == "prio":
+        params.append("PRIO_PT10M_AVG")
+    elif args.var == "clhb":
+        params.append("CLHB_PT1M_INSTANT")
+    elif args.var == "vis":
+        params.append("VIS_PT1M_AVG")
 
     # Set style file
     plt.style.use(cfg.STYLE_FILE)

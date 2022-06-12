@@ -670,15 +670,6 @@ def plot_log_nobs_distribution(
     )
     plt.close()
 
-
-params = [
-    "utctime",
-    "PRIO_PT10M_AVG",
-    "sunelevation",
-    "stationname",
-    "CLHB_PT1M_INSTANT",
-    "VIS_PT1M_AVG",
-]
 names = {
     "utctime": "Time (UTC)",
     "PRIO_PT10M_AVG": "Precipitation intensity (10min average) [mm h$^{-1}$]",
@@ -712,10 +703,33 @@ if __name__ == "__main__":
     argparser.add_argument(
         "--ext", type=str, default="pdf", help="Figure file extension"
     )
+    argparser.add_argument(
+        "--var",
+        type=str,
+        default="none",
+        choices=["prio", "vis", "clhb", "none"],
+        help="Variable that is calculated",
+    )
     args = argparser.parse_args()
     startdate = datetime.strptime(args.startdate, "%Y%m")
-    enddate = datetime.strptime(args.enddate, "%Y%m")
+    enddate = (
+        datetime.strptime(args.enddate, "%Y%m") + pd.offsets.MonthEnd(0)
+    ).to_pydatetime()
     datesuffix = f"{startdate:%Y%m}_{enddate:%Y%m}"
+
+    params = [
+        "utctime",
+        "stationname",
+        # "PRIO_PT10M_AVG",
+        # "CLHB_PT1M_INSTANT",
+        # "VIS_PT1M_AVG",
+    ]
+    if args.var == "prio":
+        params.append("PRIO_PT10M_AVG")
+    elif args.var == "clhb":
+        params.append("CLHB_PT1M_INSTANT")
+    elif args.var == "vis":
+        params.append("VIS_PT1M_AVG")
 
     rtype = args.rtype
     datapath = args.datapath
@@ -724,16 +738,26 @@ if __name__ == "__main__":
 
     plt.style.use(cfg.STYLE_FILE)
 
-    radar_cfg = cfg.RADAR_INFO["fivxt"]
-    lidar_cfg = cfg.LIDAR_INFO["vaisala"]
-    basepath = cfg.MWSA_DATA_PATH
-
     df_list = []
 
+    paths = Path(datapath).glob("*stats.csv")
+    pattern = re.compile("([0-9]{8})_([0-9]{8})_" + f"{rtype}_stats.csv")
+
     tol = pd.Timedelta(f"{args.tol} minute")
-    dateinterval = pd.date_range(startdate, enddate + pd.offsets.MonthEnd(), freq="M")
-    for month in dateinterval:
-        csvfn = os.path.join(datapath, f"{month:%Y%m}_{month:%Y%m}_{rtype}_stats.csv")
+    for csvfn in paths:
+        try:
+            dates = pattern.findall(csvfn.name)[0]
+        except:
+            continue
+
+        if len(dates) != 2:
+            continue
+
+        start = datetime.strptime(dates[0], "%Y%m%d")
+        end = datetime.strptime(dates[1], "%Y%m%d")
+
+        if not (start >= startdate and end <= enddate):
+            continue
 
         try:
             df = pd.read_csv(
@@ -747,31 +771,41 @@ if __name__ == "__main__":
             continue
 
         df["radar_type"] = rtype
+        inst_cols = df.columns
 
-        # Load weather datda
-        starttime = df["lidar_time"].min()
-        endtime = df["lidar_time"].max()
-        wdf = utils.query_Smartmet_station(station_fmisid, starttime, endtime, params)
-
-        # Drop empty rows (if no observations given for some time)
-        drop_cols = [c for c in wdf.columns if str(tol.seconds // 60) in c]
-        wdf.dropna(how="all", subset=drop_cols, inplace=True)
-
-        wdf1 = wdf.set_index("time")
-        df1 = df.set_index("lidar_time")
-        dff = pd.merge_asof(
-            left=wdf1,
-            right=df1,
-            right_index=True,
-            left_index=True,
-            direction="backward",
-            tolerance=tol,
-        )
-
-        df_list.append(dff)
+        df_list.append(df)
 
     df = pd.concat(df_list)
+    df1 = df.set_index("lidar_time", drop=False)
+    df1.sort_index(inplace=True)
+
+    # Load weather datda
+    starttime = df["lidar_time"].min()
+    endtime = df["lidar_time"].max()
+
+    wdf = utils.query_Smartmet_station(station_fmisid, starttime, endtime, params)
+
+    # Drop empty rows (if no observations given for some time)
+    drop_cols = [c for c in wdf.columns if str(tol.seconds // 60) in c]
+    wdf.dropna(how="all", subset=drop_cols, inplace=True)
+
+    wdf1 = wdf.set_index("time")
+    wdf1.sort_index(inplace=True)
+    df = pd.merge_asof(
+        left=wdf1,
+        right=df1,
+        right_index=True,
+        left_index=True,
+        direction="nearest",
+        tolerance=tol,
+    )
+
+    inst_cols = list(inst_cols)
+    df.dropna(subset=inst_cols, how="all", inplace=True)
     df.sort_index(inplace=True)
+    df.drop_duplicates(subset=inst_cols, inplace=True)
+
+    print(f"Number of cases: {len(df)}")
 
     # Load mask and count number of observations
     mask = np.loadtxt(cfg.OBS_MASK_PATH)
@@ -785,7 +819,8 @@ if __name__ == "__main__":
     vmin = 0.0001
     vmax = 0.1
 
-    if args.tol == 1:
+    if args.var == "vis":
+        # Horizontal visibility
         final(figsize=(8, 5), constrained_layout=True)(plot_nobs_distribution)(
             df,
             "full",
@@ -801,6 +836,7 @@ if __name__ == "__main__":
             outpath=outpath,
             title=False,
         )
+
         # final(figsize=(8, 5), constrained_layout=True)(plot_nobs_distribution)(
         #     df,
         #     "full",
@@ -815,6 +851,8 @@ if __name__ == "__main__":
         #     outpath=outpath,
         #     title=False,
         # )
+    elif args.var == "clhb":
+        # Cloud base height
         final(figsize=(8, 5), constrained_layout=True)(plot_nobs_distribution)(
             df,
             "subset",
@@ -851,7 +889,7 @@ if __name__ == "__main__":
         #     title=False,
         # )
 
-    elif args.tol == 10:
+    elif args.var == "prio":
         # Needs to have tolerance 10
         final(figsize=(8, 5), constrained_layout=True)(plot_nobs_distribution)(
             df,
@@ -863,6 +901,7 @@ if __name__ == "__main__":
             xres=0.015,
             vmin=vmin,
             vmax=vmax,
+            nmin=1,
             x_unit="mm h$^{-1}$",
             x_formatter=mmh_formatter,
             datesuffix=datesuffix,
