@@ -82,7 +82,7 @@ python plot_surface_meas_distributions.py WND-03 results 202110 202111 --outpath
 
 
 # Precipitation intensity
-python plot_surface_meas_distributions.py WND-03 results 202105 202111 --outpath results --tol 10 --var pri
+python plot_surface_meas_distributions.py WND-03 results 202105 202111 --outpath results --tol 10 --var prio
 
 ```
 
