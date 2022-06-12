@@ -6,6 +6,7 @@ Author: Jenna Ritvanen <jenna.ritvanen@fmi.fi>
 
 """
 import os
+import re
 import argparse
 import warnings
 from datetime import datetime
@@ -239,9 +240,11 @@ def plot_linear_fit_plot(
         dpi=500,
         bbox_inches="tight",
     )
+    plt.close(corr_fig)
 
     fig.subplots_adjust(hspace=0.15)
     fig.savefig(outfn, bbox_inches="tight")
+    plt.close(fig)
 
 
 def filter_data(
@@ -392,6 +395,7 @@ def plot_pairgrid(df, fname, title=None):
     # cbar.ax.xaxis.set_ticks_position("top")
     fig.suptitle(title)
     fig.savefig(fname, dpi=500, bbox_inches="tight")
+    plt.close(fig)
 
 
 def plot_lidar_pairgrid(df, fname, title=None):
@@ -485,6 +489,7 @@ def plot_lidar_pairgrid(df, fname, title=None):
     # cbar.ax.xaxis.set_ticks_position('top')
     fig.suptitle(title)
     fig.savefig(fname, dpi=500, bbox_inches="tight")
+    plt.close(fig)
 
 
 def plot_radar_pairgrid(df, fname, title=None):
@@ -582,6 +587,7 @@ def plot_radar_pairgrid(df, fname, title=None):
     # cbar.ax.xaxis.set_ticks_position('top')
     fig.suptitle(title)
     fig.savefig(fname, dpi=500, bbox_inches="tight")
+    plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -603,7 +609,9 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
     startdate = datetime.strptime(args.startdate, "%Y%m")
-    enddate = datetime.strptime(args.enddate, "%Y%m")
+    enddate = (
+        datetime.strptime(args.enddate, "%Y%m") + pd.offsets.MonthEnd(0)
+    ).to_pydatetime()
     plt.style.use(cfg.STYLE_FILE)
 
     SCATTERPLOT_EXT = "pdf"
@@ -631,16 +639,27 @@ if __name__ == "__main__":
     xband_snr_ind = 6
     xband_dbz_ind = 7
     data = None
-    dateinterval = pd.date_range(startdate, enddate + pd.offsets.MonthEnd(), freq="M")
-    for month in dateinterval:
-        fn = os.path.join(
-            datapath, f"scatterplot_{month:%Y%m}_{month:%Y%m}_{rtype}_{pair}"
-        )
+
+    paths = Path(datapath).glob("scatterplot*")
+    pattern = re.compile("scatterplot_([0-9]{8})_([0-9]{8})_" + f"{rtype}_{pair}")
+
+    for fn in paths:
+        dates = pattern.findall(fn.stem)[0]
+
+        if len(dates) != 2:
+            continue
+
+        start = datetime.strptime(dates[0], "%Y%m%d")
+        end = datetime.strptime(dates[1], "%Y%m%d")
+
+        if not (start >= startdate and end <= enddate):
+            continue
+
         try:
             if data is None:
-                data = zarr.load(fn)
+                data = zarr.load(str(fn))
             else:
-                arr = zarr.load(fn)
+                arr = zarr.load(str(fn))
                 if arr is not None:
                     data = np.concatenate([data, arr], axis=0)
                     del arr

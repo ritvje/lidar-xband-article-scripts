@@ -39,18 +39,14 @@ python plot_ppi_blockage_map.py 20210501 20211130 results --outpath results
 ### Figure 3 (scatterplot of gridded measurements)
 
 Run script [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py) for the interval. Note that it might be better to run this for one month at a time, especially if you want to compare the results per month. Remember to set paths in [`config.py`](config.py). Then plot the results with [`plot_gridded_lidar_xband_scatterplot.py`](plot_gridded_lidar_xband_scatterplot.py).
+The script should be run with only one process (in `config.py` `DASK_NWORKERS=1`), as writing the data is not currently safe to do concurrently. The script can be run for longer periods with the helper script `run_scatterplot.py`.
 
 ```bash
-# Run per month
-python compute_gridded_lidar_xband.py WND-03 202105 202105 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202106 202106 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202108 202108 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202109 202109 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202110 202110 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202111 202111 --outpath results
+# Run script, with each month splitted to 4 intervals. Output goes to "results" directory
+python run_scatterplot.py WND-03 202105 202111 results --month_splits 4
 
 # When done, plot with this
-python plot_gridded_lidar_xband_scatterplot.py WND-03 results 202105 202111 --outpath results
+python plot_gridded_lidar_xband_scatterplot.py WND-03 results 20210501 20211130 --outpath results
 ```
 
 ### Figure 4 (measurement availability as function of range)
@@ -72,12 +68,8 @@ Run script [`compute_gridded_lidar_xband.py`](compute_gridded_lidar_xband.py) fo
 
 ```bash
 # Run per month (same as for figure 4)
-python compute_gridded_lidar_xband.py WND-03 202105 202105 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202106 202106 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202108 202108 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202109 202109 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202110 202110 --outpath results
-python compute_gridded_lidar_xband.py WND-03 202111 202111 --outpath results
+# Run script, with each month splitted to 4 intervals. Output goes to "results" directory
+python run_scatterplot.py WND-03 202105 202111 results --month_splits 4
 
 # When done, plot with these
 # Horizontal visibility

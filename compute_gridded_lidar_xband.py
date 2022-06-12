@@ -8,6 +8,7 @@ Configurations in config.py
 Author: Jenna Ritvanen <jenna.ritvanen@fmi.fi>
 """
 import os
+import sys
 import argparse
 import warnings
 import logging
@@ -425,9 +426,13 @@ def main(startdate, enddate, radar_type, outpath):
     )
 
     # Itialize zarr arrays for storing output values
-    xl_synchronizer = zarr.ProcessSynchronizer(outpath / f"xl_{radar_type}.sync")
+    xl_synchronizer = zarr.ProcessSynchronizer(
+        outpath / f"xl_{radar_type}_{startdate:%Y%m%d}_{enddate:%Y%m%d}.sync"
+    )
     xl_data_output = zarr.open_array(
-        str(outpath / f"scatterplot_{startdate:%Y%m}_{enddate:%Y%m}_{radar_type}_xl"),
+        str(
+            outpath / f"scatterplot_{startdate:%Y%m%d}_{enddate:%Y%m%d}_{radar_type}_xl"
+        ),
         mode="w",
         shape=(1, 8),
         chunks=(1000, 8),
@@ -445,9 +450,10 @@ def main(startdate, enddate, radar_type, outpath):
     )
     # Loop over months and get files
     res = []
-    dateinterval = pd.date_range(startdate, enddate + pd.offsets.MonthEnd(), freq="M")
-    for month in dateinterval:
-        path = os.path.join(basepath, f"{month:%Y/%m/}")
+
+    dateinterval = pd.date_range(startdate, enddate, freq="1D")
+    for day in dateinterval:
+        path = os.path.join(basepath, f"{day:%Y/%m/%d/}")
 
         # Get lidar files for the month
         lidar_files = file_utils.find_matching_filenames(
@@ -455,8 +461,15 @@ def main(startdate, enddate, radar_type, outpath):
             lidar_cfg["filepattern"],
             lidar_cfg["timepattern"],
         )
+        if not len(lidar_files):
+            # No files found
+            continue
+
         # Get xband files for the given task and add to dictionary with time as key
         xband_fn_corr_tasks = get_xband_files(path)
+        if not len(xband_fn_corr_tasks):
+            # No files found
+            continue
         xband_fn_corr_tasks = xband_fn_corr_tasks[list(xband_fn_corr_tasks.keys())[0]]
         xband_files = {xband_date(f): path + f for f in xband_fn_corr_tasks}
 
@@ -478,6 +491,10 @@ def main(startdate, enddate, radar_type, outpath):
                     **kw_args,
                 )
             )
+
+    if not len(res):
+        sys.exit(0)
+
     res = dask.compute(
         *res, num_workers=cfg.DASK_NWORKERS, scheduler=cfg.DASK_SCHEDULER
     )
@@ -502,7 +519,7 @@ def main(startdate, enddate, radar_type, outpath):
     ]
 
     # Dump as csv
-    fn = f"{startdate:%Y%m}_{enddate:%Y%m}_{radar_type}_stats.csv"
+    fn = f"{startdate:%Y%m%d}_{enddate:%Y%m%d}_{radar_type}_stats.csv"
     df.to_csv(outpath / fn, index_label="lidar_time")
 
 
@@ -516,13 +533,13 @@ if __name__ == "__main__":
         help="X-band type",
         choices=["WND-01", "WND-02", "WND-03", "MWS-PPI1_G"],
     )
-    argparser.add_argument("startdate", type=str, help="the startdate (YYYYmm)")
-    argparser.add_argument("enddate", type=str, help="the enddate (YYYYmm)")
+    argparser.add_argument("startdate", type=str, help="the startdate (YYYYmmdd)")
+    argparser.add_argument("enddate", type=str, help="the enddate (YYYYmmdd)")
     argparser.add_argument("--outpath", type=str, default=".", help="Output path")
 
     args = argparser.parse_args()
-    startdate = datetime.strptime(args.startdate, "%Y%m")
-    enddate = datetime.strptime(args.enddate, "%Y%m")
+    startdate = datetime.strptime(args.startdate, "%Y%m%d")
+    enddate = datetime.strptime(args.enddate, "%Y%m%d")
 
     outpath = Path(args.outpath)
     outpath.mkdir(exist_ok=True, parents=True)
