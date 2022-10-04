@@ -44,7 +44,14 @@ if __name__ == "__main__":
             periods=args.month_splits + 1,
         )
 
-        for start, end in zip(dateintervals[:-1], dateintervals[1:]):
+        startdays = dateintervals[:-1]
+        enddays = dateintervals[1:]
+
+        for start, end in zip(startdays, enddays):
+
+            if end in startdays:
+                end -= pd.Timedelta("1 day")
+
             p = sh.python(
                 script,
                 args.rtype,
