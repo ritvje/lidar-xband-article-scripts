@@ -584,6 +584,12 @@ def get_radar_data(radar, alt=29, SQI_thr=None):
     data["reflectivity"] = radar.fields["reflectivity"]["data"][
         0 : radar.sweep_end_ray_index["data"][0] + 1, :
     ]
+    data["differential_reflectivity"] = radar.fields["differential_reflectivity"][
+        "data"
+    ][0 : radar.sweep_end_ray_index["data"][0] + 1, :]
+    data["cross_correlation_ratio"] = radar.fields["cross_correlation_ratio"]["data"][
+        0 : radar.sweep_end_ray_index["data"][0] + 1, :
+    ]
 
     data["WRAD"] = radar.fields["spectrum_width"]["data"][
         0 : radar.sweep_end_ray_index["data"][0] + 1, :

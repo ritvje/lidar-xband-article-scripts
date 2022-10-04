@@ -211,6 +211,28 @@ def worker(
             grid_proj4=grid_proj4,
             rlim=(cfg.GRID.rlim),
         )
+        cart_xband_zdr, _ = utils.radar_to_cart(
+            dxband["differential_reflectivity"],
+            dxband["azimuth"],
+            dxband["r_los"],
+            dxband["elev"],
+            dxband["lonlatalt"],
+            xgrid,
+            ygrid,
+            grid_proj4=grid_proj4,
+            rlim=(cfg.GRID.rlim),
+        )
+        cart_xband_rhohv, _ = utils.radar_to_cart(
+            dxband["cross_correlation_ratio"],
+            dxband["azimuth"],
+            dxband["r_los"],
+            dxband["elev"],
+            dxband["lonlatalt"],
+            xgrid,
+            ygrid,
+            grid_proj4=grid_proj4,
+            rlim=(cfg.GRID.rlim),
+        )
     except ValueError:
         return None
 
@@ -305,6 +327,8 @@ def worker(
                 cart_xband_var_v.filled().ravel(),
                 cart_xband_snr.filled().ravel(),
                 cart_xband_reflectivity.filled().ravel(),
+                cart_xband_zdr.filled().ravel(),
+                cart_xband_rhohv.filled().ravel(),
             ],
             axis=-1,
         )[xl_mask.ravel(), :]
@@ -318,6 +342,7 @@ def worker(
     del cart_lidar, cart_xband, cart_xband_median
     del mask, lidar_nobs_mask, xband_nobs_mask
     del cart_lidar_cnr, cart_xband_var_v, cart_xband_snr, cart_xband_reflectivity
+    del cart_xband_zdr, cart_xband_rhohv
     del dlidar, dxband
 
     return rdict
@@ -434,8 +459,8 @@ def main(startdate, enddate, radar_type, outpath):
             outpath / f"scatterplot_{startdate:%Y%m%d}_{enddate:%Y%m%d}_{radar_type}_xl"
         ),
         mode="w",
-        shape=(1, 8),
-        chunks=(1000, 8),
+        shape=(1, 10),
+        chunks=(1000, 10),
         # dtype='i4',
         synchronizer=xl_synchronizer,
     )
