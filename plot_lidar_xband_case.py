@@ -108,7 +108,7 @@ def plot_4panel_ppi(
         ax.set_title(title, y=-0.12)
     fig.text(
         0.5,
-        0.90,
+        0.905,
         f"{radar_time:%Y/%m/%d %H:%M:%S} X-band radar 2.0° PPI",
         ha="center",
         va="top",
@@ -148,8 +148,8 @@ def plot_4panel_ppi(
         wrl.vis.plot_ppi(
             data,
             r=lidar_sweep["range"].data / 1000,
-            elev=lidar_sweep["range_gate_length"].data.item(),
-            az=(180 + lidar_sweep["azimuth"].data) % 360,
+            elev=lidar_sweep["elevation"].data,
+            az=lidar_sweep["azimuth"].data,
             ax=ax,
             norm=norm,
             cmap=cmap,

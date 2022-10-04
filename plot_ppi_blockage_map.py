@@ -39,6 +39,8 @@ centerpoint = (24.87608, 60.28233)
 
 airport_aws = (24.95675, 60.32670)
 
+COPYRIGHT_TEXT = "Map tiles by Stamen Design, under CC BY 3.0. \nMap data by OpenStreetMap, under ODbL."
+
 
 @mlt.ticker.FuncFormatter
 def m2km_formatter(x, pos):
@@ -218,6 +220,10 @@ if __name__ == "__main__":
         ax.tick_params(axis="both", which="major", labelsize="small")
 
         ax.set_aspect(1)
+
+        ax.text(
+            0.75, 0.01, COPYRIGHT_TEXT, fontsize=4, zorder=100, transform=ax.transAxes
+        )
 
     ax_radar.set_yticks([])
     ax_radar.set_yticklabels([])
