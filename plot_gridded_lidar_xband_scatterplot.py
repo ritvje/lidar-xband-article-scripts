@@ -329,10 +329,6 @@ def plot_linear_fit_plot(
     )
     plt.close(corr_fig)
 
-    fig.subplots_adjust(hspace=0.15)
-    fig.savefig(outfn, bbox_inches="tight")
-    plt.close(fig)
-
 
 def filter_data(
     data,
@@ -707,7 +703,7 @@ if __name__ == "__main__":
     ).to_pydatetime()
     plt.style.use(cfg.STYLE_FILE)
 
-    SCATTERPLOT_EXT = "pdf"
+    SCATTERPLOT_EXT = "png"
 
     outpath = Path(args.outpath)
 
@@ -785,6 +781,8 @@ if __name__ == "__main__":
         "Doppler V var [m$^2$s$^{-2}$]",
         "SNR [dB]",
         "Reflectivity [dBZ]",
+        "Differential reflectivity [dBZ]",
+        "Co-polar correlation coefficient",
     ]
     df = pd.DataFrame(
         data,
