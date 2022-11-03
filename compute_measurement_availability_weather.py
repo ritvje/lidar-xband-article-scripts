@@ -269,6 +269,14 @@ def main(
         params,
     )
     wdf.set_index("time", inplace=True)
+    # wdf.to_csv(outpath / f"weather_data_{startdate:%Y%m%d}_{enddate:%Y%m%d}.csv")
+    # wdf = pd.read_csv(
+    #     outpath / f"weather_data_{startdate:%Y%m%d}_{enddate:%Y%m%d}.csv",
+    #     index_col=0,
+    #     parse_dates=[
+    #         0, 1,
+    #     ],
+    # )
 
     # Drop empty rows (if no observations given for some time)
     drop_cols = [c for c in wdf.columns if str(tol.seconds // 60) in c]
