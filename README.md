@@ -1,6 +1,6 @@
 # Lidar / X-band Doppler velocity article code
 
-This repository contains scripts for creating the figures for the article "Complementarity of Wind Measurements from Co-located X-band Weather Radar and Doppler Lidar" by Ritvanen et al.
+This repository contains scripts for creating the figures for the article "Complementarity of Wind Measurements from Co-located X-band Weather Radar and Doppler Lidar" by Ritvanen et al., published in the Atmospheric Measurement Techniques journal ([https://doi.org/10.5194/amt-15-6507-2022](https://doi.org/10.5194/amt-15-6507-2022)).
 
 ## Python scripts
 
